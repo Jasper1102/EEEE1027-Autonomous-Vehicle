@@ -1,0 +1,93 @@
+#include <LiquidCrystal.h>
+
+LiquidCrystal lcd(8, 9, 4, 5, 6, 7);
+
+const int L_EN = 13;
+const int L_DIR = 12;
+const int R_EN = 11;
+const int R_DIR = 3;
+
+const int PIN_DIGITAL_LEFT = A5;
+const int PIN_ANALOG_RIGHT = A4;
+
+const int BRAKE_TIME = 80;
+const int FORCE_TURN_TIME = 180;
+const int FWD_PULSE = 10;
+const int FWD_REST = 0;
+
+int analogThreshold = 500;
+const int BLACK_STATE = HIGH;
+
+void setup() {
+  pinMode(L_EN, OUTPUT); digitalWrite(L_EN, LOW);
+  pinMode(L_DIR, OUTPUT); digitalWrite(L_DIR, LOW);
+  pinMode(R_EN, OUTPUT); digitalWrite(R_EN, LOW);
+  pinMode(R_DIR, OUTPUT); digitalWrite(R_DIR, LOW);
+  Serial.begin(9600);
+  lcd.begin(16, 2);
+  pinMode(PIN_DIGITAL_LEFT, INPUT);
+  analogThreshold = 500;
+  lcd.clear();
+  lcd.print("Mode: V48 BRAKE");
+  delay(500);
+}
+
+void loop() {
+  bool leftBlack = (digitalRead(PIN_DIGITAL_LEFT) == BLACK_STATE);
+  bool rightBlack = (analogRead(PIN_ANALOG_RIGHT) > analogThreshold);
+
+  if (leftBlack && !rightBlack) {
+    forceBrake();
+    delay(BRAKE_TIME);
+    stopMotors();
+    delay(50);
+    forceSpinLeft();
+    delay(FORCE_TURN_TIME);
+    stopMotors();
+    delay(50);
+  }
+  else if (!leftBlack && rightBlack) {
+    forceBrake();
+    delay(BRAKE_TIME);
+    stopMotors();
+    delay(50);
+    forceSpinRight();
+    delay(FORCE_TURN_TIME);
+    stopMotors();
+    delay(50);
+  }
+  else {
+    fastForward();
+  }
+}
+
+void fastForward() {
+  digitalWrite(L_EN, LOW); digitalWrite(L_DIR, HIGH);
+  digitalWrite(R_EN, LOW); digitalWrite(R_DIR, HIGH);
+  delay(FWD_PULSE);
+  if (FWD_REST > 0) {
+    digitalWrite(L_EN, LOW); digitalWrite(L_DIR, LOW);
+    digitalWrite(R_EN, LOW); digitalWrite(R_DIR, LOW);
+    delay(FWD_REST);
+  }
+}
+
+void forceBrake() {
+  digitalWrite(L_EN, HIGH); digitalWrite(L_DIR, LOW);
+  digitalWrite(R_EN, HIGH); digitalWrite(R_DIR, LOW);
+}
+
+void forceSpinLeft() {
+  digitalWrite(L_EN, HIGH); digitalWrite(L_DIR, LOW);
+  digitalWrite(R_EN, LOW);  digitalWrite(R_DIR, HIGH);
+}
+
+void forceSpinRight() {
+  digitalWrite(L_EN, LOW);  digitalWrite(L_DIR, HIGH);
+  digitalWrite(R_EN, HIGH); digitalWrite(R_DIR, LOW);
+}
+
+void stopMotors() {
+  digitalWrite(L_EN, LOW); digitalWrite(L_DIR, LOW);
+  digitalWrite(R_EN, LOW); digitalWrite(R_DIR, LOW);
+}
